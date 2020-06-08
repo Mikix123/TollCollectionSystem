@@ -1,0 +1,4 @@
+﻿CameraDevice/.idea
+CameraDevice/certs/certificate.pem.crt
+CameraDevice/certs/private.pem.key
+CameraDevice/certs/root.pem
