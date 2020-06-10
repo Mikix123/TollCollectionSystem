@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 import time
 
-DEVICE_ID = 1234
+CAMERA_ID = 1234
 GATE_ID = 4321
 
 # Configs
@@ -11,8 +11,9 @@ iot_core_endpoint = 'a16uyg6g85q8ne-ats.iot.us-east-1.amazonaws.com'
 root_ca_path = './certs/root.pem'
 private_key_path = './certs/private.pem.key'
 certificate_path = './certs/certificate.pem.crt'
+topic = 'iot/tollCollectionSystem/carAtGate'
 
-my_mqtt_client = AWSIoTMQTTClient('camera-device-1234')
+my_mqtt_client = AWSIoTMQTTClient('camera-1234')
 
 
 def open_connection():
@@ -28,7 +29,7 @@ def open_connection():
 
 def send_message(payload):
     print('{} - New message published'.format(datetime.now()))
-    my_mqtt_client.publish('iot/tollCollectionSystem/carAtGate', payload, 0)
+    my_mqtt_client.publish(topic, payload, 0)
 
 
 open_connection()
@@ -37,7 +38,7 @@ with open('cars.json', encoding="utf8") as json_file:
     for car in cars['data']:
         if 'tablica-rejestracyjna' in car['attributes']:
             data = {
-                "deviceId": DEVICE_ID,
+                "cameraId": CAMERA_ID,
                 "gateId": GATE_ID,
                 "date": datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f%z'),
                 "car": {

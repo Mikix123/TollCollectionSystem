@@ -2,3 +2,8 @@
 CameraDevice/certs/certificate.pem.crt
 CameraDevice/certs/private.pem.key
 CameraDevice/certs/root.pem
+CameraDevice/certs/public.pem.key
+GateDevice/certs/certificate.pem.crt
+GateDevice/certs/private.pem.key
+GateDevice/certs/public.pem.key
+GateDevice/certs/root.pem
