@@ -47,6 +47,6 @@ with open('cars.json', encoding="utf8") as json_file:
                     "model": car['attributes']['model']
                 }
             }
-            print('{} - Car at gate: {}'.format(datetime.now(), data))
-            send_message(str(data))
+            print('{} - Car at gate: {}'.format(datetime.now(), json.dumps(data)))
+            send_message(json.dumps(data))
             time.sleep(5)

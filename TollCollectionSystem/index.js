@@ -1,22 +1,22 @@
-const Joi = require('joi');
+const Joi = require('@hapi/joi');
 const AWS = require('aws-sdk');
 
 const ddb = new AWS.DynamoDB.DocumentClient();
 const sqs = new AWS.SQS();
 
 const schema = Joi.object({
-    deviceId: Joi.number().integer().required(),
+    cameraId: Joi.number().integer().required(),
     gateId: Joi.number().integer().required(),
     date: Joi.date().required(),
     car: Joi.required(),
     car: {
-        plateNumer: Joi.string().required(),
+        plateNumber: Joi.string().required(),
         make: Joi.string().required(),
         model: Joi.string().required()
     }
 });
 
-exports.handler = async(event, context) => {
+module.exports.handler = async(event, context) => {
     try {
         await schema.validate(event);
     }
@@ -25,38 +25,40 @@ exports.handler = async(event, context) => {
     }
 
     let cars;
-    await findCarOwner(event.car.plateNumer)
+    await findCarOwner(event.car.plateNumber)
         .then(res => {
             cars = res.Items;
         })
         .catch(err => { throw new Error('Getting car from db ' + err); });
 
     if (cars == null || cars.length == 0) {
-        return "Car owner not found for car plate" + event.car.plateNumer;
+        console.log('Car owner not found for car plate' + event.car.plateNumber)
+        return 'Car owner not found for car plate' + event.car.plateNumber;
     }
 
     if (cars[0].CarOwner.AccountBalance < process.env.CostOfOneRide) {
-        await sendMessageToUser(cars[0].CarOwner, "Your account balance is to low to open the gate");
-        return "Account balance to low";
+        await sendMessageToUser(cars[0].CarOwner, 'Your account balance is to low to open the gate');
+        console.log('Account balance to low. Plate number '+ event.car.plateNumber)
+        return 'Account balance to low';
     }
 
     const newAccountBalance = cars[0].CarOwner.AccountBalance - process.env.CostOfOneRide;
-    await updateAccountBalance(event.car.plateNumer, newAccountBalance)
+    await updateAccountBalance(event.car.plateNumber, newAccountBalance)
         .catch(err => { throw new Error('Updating account balance ' + err); });
 
     await sendMessageToUser(cars[0].CarOwner, "Your account has been charged for the trip, your current account balance is: " + newAccountBalance);
 
-    await openTheGate(event.deviceId, event.gateId);
+    await openTheGate(event.cameraId, event.gateId);
 
     return "Ok";
 };
 
-async function updateAccountBalance(plateNumer, newAccountBalance) {
+async function updateAccountBalance(plateNumber, newAccountBalance) {
 
     var params = {
         TableName: "Car",
         Key: {
-            "PlateNumer": plateNumer
+            "PlateNumber": plateNumber
         },
         UpdateExpression: "set CarOwner.AccountBalance = :r",
         ExpressionAttributeValues: {
@@ -68,12 +70,12 @@ async function updateAccountBalance(plateNumer, newAccountBalance) {
     return ddb.update(params).promise();
 }
 
-async function findCarOwner(plateNumer) {
-    console.log('Finding a car owner for car plate: ', plateNumer);
+async function findCarOwner(plateNumber) {
+    console.log('Finding a car owner for car plate: ', plateNumber);
     const params = {
-        KeyConditionExpression: "PlateNumer = :v1",
+        KeyConditionExpression: "PlateNumber = :v1",
         ExpressionAttributeValues: {
-            ":v1": plateNumer
+            ":v1": plateNumber
         },
         TableName: "Car"
     };
@@ -104,18 +106,18 @@ async function sendMessageToUser(owner, message) {
     return sqs.sendMessage(params).promise();
 }
 
-function openTheGate(deviceId, gateId) {
+function openTheGate(cameraId, gateId) {
 
     const messageObj = {
-        'deviceId': deviceId,
+        'cameraId': cameraId,
         'gateId': gateId,
     };
 
     const params = {
         MessageAttributes: {
-            "DeviceId": {
+            "CameraId": {
                 DataType: "Number",
-                StringValue: deviceId.toString()
+                StringValue: cameraId.toString()
             },
             "GateId": {
                 DataType: "Number",
@@ -127,3 +129,4 @@ function openTheGate(deviceId, gateId) {
     };
     return sqs.sendMessage(params).promise();
 }
+	
